@@ -55,30 +55,46 @@
         }
 
         // Handle Query Form
+        // Handle Query Form
         document.getElementById('queryForm').onsubmit = async function(event) {
             event.preventDefault();
             const documentId = document.getElementById('document_id').value;
             const question = document.getElementById('question').value;
             
-            const response = await fetch('/query/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ document_id: documentId, question: question })
-            });
+            console.log('Sending query:', { document_id: documentId, question: question });
 
-            const data = await response.json();
-            document.getElementById('queryResponse').innerHTML = `
-                <h3>Answer:</h3>
-                <p>${data.answer}</p>
-                <h3>Bullet Points:</h3>
-                <p>${data.bullet_points.replace(/\n\n/g, '<br>')}</p>
-                <h3>Test Question:</h3>
-                <p>${data.test_question}</p>
-                <h3>Test Question ID:</h3>
-                <p>${data.test_question_id}</p>
-            `;
+            try {
+                const response = await fetch('/query/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ document_id: documentId, question: question })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Received data:', data);
+
+                document.getElementById('queryResponse').innerHTML = `
+                    <h3>Answer:</h3>
+                    <p>${data.answer}</p>
+                    <h3>Bullet Points:</h3>
+                    <ul>
+                        ${data.bullet_points.map(point => `<li>${point}</li>`).join('')}
+                    </ul>
+                    <h3>Test Question:</h3>
+                    <p>${data.test_question}</p>
+                    <h3>Test Question ID:</h3>
+                    <p>${data.test_question_id}</p>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('queryResponse').textContent = 'An error occurred while querying the document.';
+            }
         }
 
         // Handle Evaluate Form

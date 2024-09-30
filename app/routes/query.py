@@ -3,114 +3,106 @@ from app.model import Document, TestQuestion
 from app import db
 import spacy
 import random
+from sentence_transformers import SentenceTransformer, util
+import torch
+from transformers import T5ForConditionalGeneration, T5Tokenizer
 
-# Initialize spaCy NLP model
-nlp = spacy.load('en_core_web_md')
+# Load spaCy model
+nlp = spacy.load("en_core_web_sm")
+
+# Initialize Sentence Transformer model for answer generation
+sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
+
+# Initialize T5 model and tokenizer for question generation
+t5_tokenizer = T5Tokenizer.from_pretrained('t5-small')
+t5_model = T5ForConditionalGeneration.from_pretrained('t5-small')
 
 bp = Blueprint('query', __name__, url_prefix='/query')
 
-def extract_context_with_keywords(document_content, question, keywords=None, n_sentences=5):
-    """
-    Extract context that is most relevant to the question based on keywords.
-    """
-    # Define default keywords if none are provided
-    if keywords is None:
-        keywords = ["ethical", "concerns", "privacy", "bias", "transparency"]
-
-    # Process document content using spaCy
-    doc = nlp(document_content)
-
-    # Split the document into paragraphs or sentences
-    paragraphs = [p.text for p in doc.sents if any(kw in p.text.lower() for kw in keywords)]
-
-    # If relevant paragraphs are found, join them to form a new context
-    if paragraphs:
-        context = " ".join(paragraphs)
-    else:
-        # Fall back to full document content if no keywords match
-        context = document_content
-
-    # Further refine the context by finding sentences that match the question
-    refined_context = extract_context(context, question, n_sentences=n_sentences)
-    return refined_context
-
-def extract_context(document_content, question, n_sentences=5):
-    """
-    Find the most relevant sentences around the question context.
-    """
-    doc = nlp(document_content)
-    # Find sentences similar to the question
-    sentences = list(doc.sents)
-    # Get the best matching sentence based on similarity to the question
-    best_sentence = max(sentences, key=lambda sent: sent.similarity(nlp(question)))
-
-    # Get n_sentences around the best match for better context
-    best_index = sentences.index(best_sentence)
-    start_index = max(0, best_index - n_sentences // 2)
-    end_index = min(len(sentences), best_index + n_sentences // 2 + 1)
-
-    # Return the context string
-    return " ".join([str(sent) for sent in sentences[start_index:end_index]])
-
-def generate_answer(content, question):
-    # Extract relevant context with a focus on keywords
-    context = extract_context_with_keywords(content, question)
+def generate_answer(content, question, top_k=3):
+    # Split the content into sentences
+    doc = nlp(content)
+    sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
     
-    # Use the spaCy similarity-based approach to extract an answer from the context
-    doc_content = nlp(context)
-    doc_question = nlp(question)
+    # Encode the sentences and the question
+    embeddings = sentence_model.encode(sentences, convert_to_tensor=True)
+    question_embedding = sentence_model.encode(question, convert_to_tensor=True)
+    
+    # Compute cosine similarities
+    cosine_scores = util.cos_sim(question_embedding, embeddings)[0]
+    
+    # Get the top_k most relevant sentences
+    top_results = torch.topk(cosine_scores, k=top_k)
+    
+    # Combine the top sentences into the answer
+    answer = ' '.join([sentences[idx] for idx in top_results[1]])
+    
+    return answer
 
-    # Find sentences in the context similar to the question
-    sentences = [sent for sent in doc_content.sents]
-    best_sentence = max(sentences, key=lambda sent: sent.similarity(doc_question))
-
-    # Extract the best matching sentence as the answer
-    answer = best_sentence.text
-
-    # Generate up to 3 bullet points by splitting the answer into sentences or phrases
-    bullet_points = [str(sent).strip() for sent in list(nlp(answer).sents)[:3]]  # Convert to list before slicing
-
-    return answer, bullet_points
-
+def extract_bullet_points(answer, num_points=4):
+    # Split the answer into sentences
+    sentences = [sent.text.strip() for sent in nlp(answer).sents if sent.text.strip()]
+    bullet_points = sentences[:num_points]
+    return bullet_points
 
 def generate_test_question(answer):
-    # Generate a simple test question based on the answer
-    test_question = f"What does the following statement imply: '{answer}'?"
+    # Prepare the input text for the T5 model
+    input_text = "generate question: " + answer
+    input_ids = t5_tokenizer.encode(input_text, return_tensors='pt')
+    
+    # Generate the question using the T5 model
+    outputs = t5_model.generate(
+        input_ids=input_ids,
+        max_length=64,
+        num_beams=5,
+        early_stopping=True
+    )
+    
+    # Decode the generated question
+    question = t5_tokenizer.decode(outputs[0], skip_special_tokens=True)
+    
+    # Generate a unique test question ID
     test_question_id = f"tq_{random.randint(1000, 9999)}"
-
-    return test_question, test_question_id
+    
+    return question, test_question_id
 
 @bp.route('/', methods=['POST'])
 def query_document():
     data = request.json
     document_id = data.get('document_id')
     question = data.get('question')
+    
+    if not document_id or not question:
+        return jsonify({"error": "document_id and question are required"}), 400
 
-    # Retrieve the document
     document = Document.query.get(document_id)
     if not document:
         return jsonify({"error": "Document not found"}), 404
 
     content = document.content
 
-    # Generate answer and bullet points using refined context
-    answer, bullet_points = generate_answer(content, question)
+    # Generate a comprehensive answer
+    answer = generate_answer(content, question)
+
+    # Extract bullet points from the answer
+    bullet_points = extract_bullet_points(answer)
+
+    # Generate a test question based on the answer
     test_question, test_question_id = generate_test_question(answer)
 
     # Store test question and correct answer in the database
     test_question_record = TestQuestion(
         id=test_question_id,
         question=test_question,
-        correct_answer=answer,  # Store the generated answer as the correct answer
+        correct_answer=answer,
         document_id=document_id
     )
     db.session.add(test_question_record)
     db.session.commit()
 
-    # Format response with new lines for better readability
     return jsonify({
         "answer": answer,
-        "bullet_points": "\n\n".join(bullet_points),  # Add new lines between bullet points
+        "bullet_points": bullet_points,
         "test_question": test_question,
         "test_question_id": test_question_id
     })
