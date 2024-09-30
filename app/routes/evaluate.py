@@ -1,22 +1,29 @@
 from flask import Blueprint, request, jsonify
 from app.model import TestQuestion
-import spacy
+import torch
+from transformers import AutoTokenizer, AutoModel
 
 # Use a unique name for the blueprint to avoid conflicts
 bp = Blueprint('evaluate', __name__, url_prefix='/evaluate')
 
-# Load spaCy model for semantic similarity
-nlp = spacy.load('en_core_web_sm')
+# Load a transformer model for semantic similarity
+tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
+model = AutoModel.from_pretrained('bert-base-uncased')
 
 def calculate_similarity(text1, text2):
-    # Process texts with spaCy
-    doc1 = nlp(text1)
-    doc2 = nlp(text2)
+    # Tokenize and encode the texts
+    tokens1 = tokenizer(text1, return_tensors='pt')
+    tokens2 = tokenizer(text2, return_tensors='pt')
     
-    # Calculate similarity score
-    similarity_score = doc1.similarity(doc2)
+    # Get embeddings from the model
+    with torch.no_grad():
+        embeddings1 = model(**tokens1).last_hidden_state.mean(dim=1)
+        embeddings2 = model(**tokens2).last_hidden_state.mean(dim=1)
     
-    return similarity_score
+    # Calculate cosine similarity
+    similarity = torch.nn.functional.cosine_similarity(embeddings1, embeddings2)
+    
+    return similarity.item()
 
 def evaluate_user_response(user_answer, correct_answer):
     # Calculate similarity score

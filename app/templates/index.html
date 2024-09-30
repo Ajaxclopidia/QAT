@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Q.A.T System</title>
+</head>
+<body>
+    <h1>Q.A.T System</h1>
+    
+    <!-- Upload Document Section -->
+    <h2>Upload Document</h2>
+    <form id="uploadForm" action="/upload/" method="post" enctype="multipart/form-data">
+        <label for="file">Upload Document:</label>
+        <input type="file" id="file" name="file" required>
+        <button type="submit">Upload</button>
+    </form>
+    <div id="uploadResponse"></div>
+    
+    <!-- Query Document Section -->
+    <h2>Query Document</h2>
+    <form id="queryForm">
+        <label for="document_id">Document ID:</label>
+        <input type="text" id="document_id" name="document_id" required>
+        <label for="question">Question:</label>
+        <input type="text" id="question" name="question" required>
+        <button type="submit">Query</button>
+    </form>
+    <div id="queryResponse"></div>
+    
+    <!-- Evaluate Test Question Section -->
+    <h2>Evaluate Response</h2>
+    <form id="evaluateForm">
+        <label for="test_question_id">Test Question ID:</label>
+        <input type="text" id="test_question_id" name="test_question_id" required>
+        <label for="user_answer">Your Answer:</label>
+        <input type="text" id="user_answer" name="user_answer" required>
+        <button type="submit">Evaluate</button>
+    </form>
+    <div id="evaluateResponse"></div>
+
+    <!-- JavaScript to Handle Form Submissions -->
+    <script>
+        // Handle Upload Form
+        document.getElementById('uploadForm').onsubmit = async function(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            
+            const response = await fetch('/upload/', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            document.getElementById('uploadResponse').textContent = `Upload Message: ${data.message}, Document ID: ${data.document_id}`;
+        }
+
+        // Handle Query Form
+        document.getElementById('queryForm').onsubmit = async function(event) {
+            event.preventDefault();
+            const documentId = document.getElementById('document_id').value;
+            const question = document.getElementById('question').value;
+            
+            const response = await fetch('/query/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ document_id: documentId, question: question })
+            });
+
+            const data = await response.json();
+            document.getElementById('queryResponse').textContent = `
+                Answer: ${data.answer}, 
+                Bullet Points: ${data.bullet_points.join(', ')}, 
+                Test Question: ${data.test_question}, 
+                Test Question ID: ${data.test_question_id}
+            `;
+        }
+
+        // Handle Evaluate Form
+        document.getElementById('evaluateForm').onsubmit = async function(event) {
+            event.preventDefault();
+            const testQuestionId = document.getElementById('test_question_id').value;
+            const userAnswer = document.getElementById('user_answer').value;
+            
+            const response = await fetch('/evaluate/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ test_question_id: testQuestionId, user_answer: userAnswer })
+            });
+
+            const data = await response.json();
+            document.getElementById('evaluateResponse').textContent = `
+                Knowledge Understood: ${data.knowledge_understood}, 
+                Knowledge Confidence: ${data.knowledge_confidence}%
+            `;
+        }
+    </script>
+</body>
+</html>
