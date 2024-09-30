@@ -1,32 +1,35 @@
 from flask import Blueprint, request, jsonify
 from app.model import Document, TestQuestion
 from app import db
-from transformers import pipeline
+import spacy
 import random
 
-# Initialize the transformer pipelines
-qa_pipeline = pipeline('question-answering', model='distilbert-base-uncased-distilled-squad')
-gpt_pipeline = pipeline('text-generation', model='gpt2')
+# Initialize spaCy NLP model
+nlp = spacy.load('en_core_web_sm')
 
 bp = Blueprint('query', __name__, url_prefix='/query')
 
 def generate_answer(content, question):
-    # Use the QA pipeline to extract an answer from the content based on the question
-    result = qa_pipeline(question=question, context=content)
-    answer = result['answer']
-    
-    # Generate bullet points (for simplicity, we'll use key sentences in the answer)
-    bullet_points = [answer]  # You can enhance this with more detailed analysis
+    # Process the content and question using spaCy
+    doc_content = nlp(content)
+    doc_question = nlp(question)
+
+    # Find sentences in the content similar to the question
+    sentences = [sent for sent in doc_content.sents]
+    best_sentence = max(sentences, key=lambda sent: sent.similarity(doc_question))
+
+    # Extract the best matching sentence as the answer
+    answer = best_sentence.text
+
+    # Generate bullet points by splitting the answer into meaningful chunks
+    bullet_points = [str(sent).strip() for sent in nlp(answer).sents]
 
     return answer, bullet_points
 
 def generate_test_question(answer):
-    # Use the GPT pipeline to generate a test question based on the answer
-    prompt = f"Create a question to test the understanding of the following statement: {answer}"
-    generated_text = gpt_pipeline(prompt, max_length=50, num_return_sequences=1)[0]['generated_text']
-    
-    # Extract the test question from the generated text
-    test_question = generated_text.replace(prompt, '').strip()
+    # Generate a simple test question based on the answer
+    # Here we use a basic heuristic: forming a question by rephrasing the answer
+    test_question = f"What does the following statement imply: '{answer}'?"
     test_question_id = f"tq_{random.randint(1000, 9999)}"
 
     return test_question, test_question_id

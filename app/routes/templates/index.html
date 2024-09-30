@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Q.A.T System</title>
+</head>
+<body>
+    <h1>Q.A.T System</h1>
+    <form id="uploadForm" action="/upload/" method="post" enctype="multipart/form-data">
+        <label for="file">Upload Document:</label>
+        <input type="file" id="file" name="file">
+        <button type="submit">Upload</button>
+    </form>
+    
+    <div id="responseMessage"></div>
+    
+    <script>
+        document.getElementById('uploadForm').onsubmit = async function(event) {
+            event.preventDefault(); // Prevent the default form submission
+            const formData = new FormData(event.target);
+            
+            const response = await fetch('/upload/', {
+                method: 'POST',
+                body: formData
+            });
+    
+            const data = await response.json();
+            document.getElementById('responseMessage').textContent = data.message;
+        }
+    </script>
+    
+</body>
+</html>
