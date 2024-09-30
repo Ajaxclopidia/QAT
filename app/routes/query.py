@@ -5,7 +5,7 @@ import spacy
 import random
 from sentence_transformers import SentenceTransformer, util
 import torch
-from transformers import T5ForConditionalGeneration, T5Tokenizer
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 # Load spaCy model
 nlp = spacy.load("en_core_web_sm")
@@ -13,9 +13,9 @@ nlp = spacy.load("en_core_web_sm")
 # Initialize Sentence Transformer model for answer generation
 sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
 
-# Initialize T5 model and tokenizer for question generation
-t5_tokenizer = T5Tokenizer.from_pretrained('t5-small')
-t5_model = T5ForConditionalGeneration.from_pretrained('t5-small')
+# Initialize the tokenizer and model for question generation
+tokenizer = AutoTokenizer.from_pretrained("valhalla/t5-small-qg-hl")
+qg_model = AutoModelForSeq2SeqLM.from_pretrained("valhalla/t5-small-qg-hl")
 
 bp = Blueprint('query', __name__, url_prefix='/query')
 
@@ -35,7 +35,7 @@ def generate_answer(content, question, top_k=3):
     top_results = torch.topk(cosine_scores, k=top_k)
     
     # Combine the top sentences into the answer
-    answer = ' '.join([sentences[idx] for idx in top_results[1]])
+    answer = ' '.join([sentences[idx] for idx in top_results.indices])
     
     return answer
 
@@ -56,14 +56,24 @@ def extract_bullet_points(answer, max_points=5):
     bullet_points = unique_phrases[:max_points]
     return bullet_points
 
-
 def generate_test_question(answer):
-    # Prepare the input text for the T5 model
-    input_text = "generate question: " + answer
-    input_ids = t5_tokenizer.encode(input_text, return_tensors='pt')
+    # Highlight key phrases in the answer using <hl> tags
+    doc = nlp(answer)
+    noun_chunks = [chunk.text for chunk in doc.noun_chunks if len(chunk.text.strip()) > 2]
+    if noun_chunks:
+        # Highlight the first noun chunk for simplicity
+        highlighted_phrase = noun_chunks[0]
+        highlighted_answer = answer.replace(highlighted_phrase, f"<hl> {highlighted_phrase} <hl>", 1)
+    else:
+        # If no noun chunks, highlight the entire answer
+        highlighted_answer = f"<hl> {answer} <hl>"
     
-    # Generate the question using the T5 model
-    outputs = t5_model.generate(
+    # The model expects 'generate question: ' prefix
+    input_text = f"generate question: {highlighted_answer}"
+    input_ids = tokenizer.encode(input_text, return_tensors='pt')
+    
+    # Generate the question using the model
+    outputs = qg_model.generate(
         input_ids=input_ids,
         max_length=64,
         num_beams=5,
@@ -71,16 +81,13 @@ def generate_test_question(answer):
     )
     
     # Decode the generated question
-    question = t5_tokenizer.decode(outputs[0], skip_special_tokens=True)
-    
-    # Generate a unique test question ID
+    question = tokenizer.decode(outputs[0], skip_special_tokens=True)
     test_question_id = f"tq_{random.randint(1000, 9999)}"
-    
     return question, test_question_id
 
 @bp.route('/', methods=['POST'])
 def query_document():
-    data = request.json
+    data = request.get_json()
     document_id = data.get('document_id')
     question = data.get('question')
     
