@@ -2,134 +2,293 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Q.A.T System</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #4ac29a;
+            --background-color: #1e1e2f;
+            --text-color: #f8f8f8;
+            --card-background: #27293d;
+            --border-radius: 16px;
+            --box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            padding: 1.5rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .navbar-brand {
+            font-size: 2rem;
+            font-weight: bold;
+            text-decoration: none;
+            color: white;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 4rem auto;
+            padding: 0 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            justify-content: center;
+        }
+
+        .card {
+            background-color: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            padding: 2rem;
+            width: 300px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 16px 32px rgba(0,0,0,0.3);
+        }
+
+        .card-title {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .card i {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--secondary-color);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        input[type="text"],
+        input[type="file"],
+        textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            outline: none;
+            background-color: #33334d;
+            color: var(--text-color);
+            margin-top: 0.5rem;
+        }
+
+        input[type="text"]:focus,
+        input[type="file"]:focus,
+        textarea:focus {
+            border: 2px solid var(--secondary-color);
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: var(--secondary-color);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        .response-section {
+            background-color: #353555;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-top: 1rem;
+            border-left: 4px solid var(--primary-color);
+            text-align: left;
+        }
+
+        .response-title {
+            color: var(--primary-color);
+            font-size: 1.4rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .icon {
+            margin-right: 0.5rem;
+            color: var(--secondary-color);
+        }
+    </style>
 </head>
 <body>
-    <h1>Q.A.T System</h1>
-    
-    <!-- Upload Document Section -->
-    <h2>Upload Document</h2>
-    <form id="uploadForm" action="/upload/" method="post" enctype="multipart/form-data">
-        <label for="file">Upload Document:</label>
-        <input type="file" id="file" name="file" required>
-        <button type="submit">Upload</button>
-    </form>
-    <div id="uploadResponse"></div>
-    
-    <!-- Query Document Section -->
-    <h2>Query Document</h2>
-    <form id="queryForm">
-        <label for="document_id">Document ID:</label>
-        <input type="text" id="document_id" name="document_id" required>
-        <label for="question">Question:</label>
-        <input type="text" id="question" name="question" required>
-        <button type="submit">Query</button>
-    </form>
-    <div id="queryResponse"></div>
-    
-    <!-- Evaluate Test Question Section -->
-    <h2>Evaluate Response</h2>
-    <form id="evaluateForm">
-        <label for="test_question_id">Test Question ID:</label>
-        <input type="text" id="test_question_id" name="test_question_id" required>
-        <label for="user_answer">Your Answer:</label>
-        <input type="text" id="user_answer" name="user_answer" required>
-        <button type="submit">Evaluate</button>
-    </form>
-    <div id="evaluateResponse"></div>
+    <nav class="navbar">
+        <a href="#" class="navbar-brand"><i class="fas fa-brain icon"></i>Q.A.T System</a>
+    </nav>
 
-    <!-- JavaScript to Handle Form Submissions -->
+    <div class="container">
+        <!-- Upload Card -->
+        <div class="card">
+            <i class="fas fa-upload icon"></i>
+            <h2 class="card-title">Upload Document</h2>
+            <form id="uploadForm" action="/upload/" method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="file">Select Document to Upload:</label>
+                    <input type="file" id="file" name="file" required>
+                </div>
+                <button type="submit" class="btn">Upload</button>
+            </form>
+            <div id="uploadResponse" class="response-section"></div>
+        </div>
+
+        <!-- Query Card -->
+        <div class="card">
+            <i class="fas fa-question-circle icon"></i>
+            <h2 class="card-title">Query Document</h2>
+            <form id="queryForm">
+                <div class="form-group">
+                    <label for="document_id">Document ID:</label>
+                    <input type="text" id="document_id" name="document_id" required>
+                </div>
+                <div class="form-group">
+                    <label for="question">Question:</label>
+                    <input type="text" id="question" name="question" required>
+                </div>
+                <button type="submit" class="btn">Query</button>
+            </form>
+            <div id="queryResponse" class="response-section"></div>
+        </div>
+
+        <!-- Evaluate Card -->
+        <div class="card">
+            <i class="fas fa-check-circle icon"></i>
+            <h2 class="card-title">Evaluate Response</h2>
+            <form id="evaluateForm">
+                <div class="form-group">
+                    <label for="test_question_id">Test Question ID:</label>
+                    <input type="text" id="test_question_id" name="test_question_id" required>
+                </div>
+                <div class="form-group">
+                    <label for="user_answer">Your Answer:</label>
+                    <textarea id="user_answer" name="user_answer" rows="4" required></textarea>
+                </div>
+                <button type="submit" class="btn">Evaluate</button>
+            </form>
+            <div id="evaluateResponse" class="response-section"></div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script>
         // Handle Upload Form
-        document.getElementById('uploadForm').onsubmit = async function(event) {
-            event.preventDefault();
-            const formData = new FormData(event.target);
-            
-            const response = await fetch('/upload/', {
-                method: 'POST',
-                body: formData
+        $('#uploadForm').submit(function(e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+
+            $.ajax({
+                url: '/upload/',
+                type: 'POST',
+                data: formData,
+                success: function(data) {
+                    $('#uploadResponse').html(`
+                        <h3 class="response-title">Upload Status</h3>
+                        <p>${data.message}</p>
+                        <p><strong>Document ID:</strong> ${data.document_id}</p>
+                    `);
+                },
+                cache: false,
+                contentType: false,
+                processData: false
             });
-
-            const data = await response.json();
-            document.getElementById('uploadResponse').textContent = `Upload Message: ${data.message}, Document ID: ${data.document_id}`;
-        }
+        });
 
         // Handle Query Form
-        // Handle Query Form
-        document.getElementById('queryForm').onsubmit = async function(event) {
-            event.preventDefault();
-            const documentId = document.getElementById('document_id').value;
-            const question = document.getElementById('question').value;
-            
-            console.log('Sending query:', { document_id: documentId, question: question });
+        $('#queryForm').submit(function(e) {
+            e.preventDefault();
+            var formData = {
+                document_id: $('#document_id').val(),
+                question: $('#question').val()
+            };
 
-            try {
-                const response = await fetch('/query/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ document_id: documentId, question: question })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
+            $.ajax({
+                url: '/query/',
+                type: 'POST',
+                data: JSON.stringify(formData),
+                contentType: 'application/json',
+                success: function(data) {
+                    $('#queryResponse').html(`
+                        <h3 class="response-title">Answer:</h3>
+                        <p>${data.answer}</p>
+                        <h3 class="response-title">Bullet Points:</h3>
+                        <ul>
+                            ${data.bullet_points.map(point => `<li>${point}</li>`).join('')}
+                        </ul>
+                        <h3 class="response-title">Test Question:</h3>
+                        <p>${data.test_question}</p>
+                        <h3 class="response-title">Test Question ID:</h3>
+                        <p>${data.test_question_id}</p>
+                    `);
+                },
+                error: function() {
+                    $('#queryResponse').text('An error occurred while querying the document.');
                 }
-
-                const data = await response.json();
-                console.log('Received data:', data);
-
-                document.getElementById('queryResponse').innerHTML = `
-                    <h3>Answer:</h3>
-                    <p>${data.answer}</p>
-                    <h3>Bullet Points:</h3>
-                    <ul>
-                        ${data.bullet_points.map(point => `<li>${point}</li>`).join('')}
-                    </ul>
-                    <h3>Test Question:</h3>
-                    <p>${data.test_question}</p>
-                    <h3>Test Question ID:</h3>
-                    <p>${data.test_question_id}</p>
-                `;
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('queryResponse').textContent = 'An error occurred while querying the document.';
-            }
-        }
+            });
+        });
 
         // Handle Evaluate Form
-        document.getElementById('evaluateForm').onsubmit = async function(event) {
-            event.preventDefault();
-            const testQuestionId = document.getElementById('test_question_id').value;
-            const userAnswer = document.getElementById('user_answer').value;
+        $('#evaluateForm').submit(function(e) {
+            e.preventDefault();
+            var formData = {
+                test_question_id: $('#test_question_id').val(),
+                user_answer: $('#user_answer').val()
+            };
 
-            try {
-                const response = await fetch('/evaluate/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ test_question_id: testQuestionId, user_answer: userAnswer })
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
+            $.ajax({
+                url: '/evaluate/',
+                type: 'POST',
+                data: JSON.stringify(formData),
+                contentType: 'application/json',
+                success: function(data) {
+                    $('#evaluateResponse').html(`
+                        <h3 class="response-title">Evaluation Result:</h3>
+                        <p><strong>Knowledge Understood:</strong> ${data.knowledge_understood ? 'Yes' : 'No'}</p>
+                        <p><strong>Knowledge Confidence:</strong> ${data.knowledge_confidence}%</p>
+                    `);
+                },
+                error: function() {
+                    $('#evaluateResponse').text('An error occurred while evaluating the response.');
                 }
-
-                const data = await response.json();
-                document.getElementById('evaluateResponse').innerHTML = `
-                    <h3>Knowledge Understood:</h3>
-                    <p>${data.knowledge_understood}</p>
-                    <h3>Knowledge Confidence:</h3>
-                    <p>${data.knowledge_confidence}%</p>
-                `;
-            } catch (error) {
-                console.error('Error:', error);
-                document.getElementById('evaluateResponse').textContent = 'An error occurred while evaluating the response.';
-            }
-        }
+            });
+        });
     </script>
-
-
 </body>
 </html>
