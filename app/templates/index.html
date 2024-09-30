@@ -69,11 +69,15 @@
             });
 
             const data = await response.json();
-            document.getElementById('queryResponse').textContent = `
-                Answer: ${data.answer}, 
-                Bullet Points: ${data.bullet_points.join(', ')}, 
-                Test Question: ${data.test_question}, 
-                Test Question ID: ${data.test_question_id}
+            document.getElementById('queryResponse').innerHTML = `
+                <h3>Answer:</h3>
+                <p>${data.answer}</p>
+                <h3>Bullet Points:</h3>
+                <p>${data.bullet_points.replace(/\n\n/g, '<br>')}</p>
+                <h3>Test Question:</h3>
+                <p>${data.test_question}</p>
+                <h3>Test Question ID:</h3>
+                <p>${data.test_question_id}</p>
             `;
         }
 
@@ -82,21 +86,34 @@
             event.preventDefault();
             const testQuestionId = document.getElementById('test_question_id').value;
             const userAnswer = document.getElementById('user_answer').value;
-            
-            const response = await fetch('/evaluate/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ test_question_id: testQuestionId, user_answer: userAnswer })
-            });
 
-            const data = await response.json();
-            document.getElementById('evaluateResponse').textContent = `
-                Knowledge Understood: ${data.knowledge_understood}, 
-                Knowledge Confidence: ${data.knowledge_confidence}%
-            `;
+            try {
+                const response = await fetch('/evaluate/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ test_question_id: testQuestionId, user_answer: userAnswer })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                document.getElementById('evaluateResponse').innerHTML = `
+                    <h3>Knowledge Understood:</h3>
+                    <p>${data.knowledge_understood}</p>
+                    <h3>Knowledge Confidence:</h3>
+                    <p>${data.knowledge_confidence}%</p>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('evaluateResponse').textContent = 'An error occurred while evaluating the response.';
+            }
         }
     </script>
+
+
 </body>
 </html>
