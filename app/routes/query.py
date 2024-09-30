@@ -3,6 +3,11 @@ from app.model import Document, TestQuestion
 from app import db
 from transformers import pipeline
 import random
+from transformers import pipeline
+import torch
+
+# Check if MPS is available and set the device accordingly
+device = 0 if torch.backends.mps.is_available() else -1
 
 # Initialize the transformer pipelines
 qa_pipeline = pipeline('question-answering', model='distilbert-base-uncased-distilled-squad')
