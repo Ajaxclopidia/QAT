@@ -39,11 +39,23 @@ def generate_answer(content, question, top_k=3):
     
     return answer
 
-def extract_bullet_points(answer, num_points=4):
-    # Split the answer into sentences
-    sentences = [sent.text.strip() for sent in nlp(answer).sents if sent.text.strip()]
-    bullet_points = sentences[:num_points]
+def extract_bullet_points(answer, max_points=5):
+    doc = nlp(answer)
+    # Extract noun chunks (key phrases)
+    phrases = [chunk.text.strip() for chunk in doc.noun_chunks if len(chunk.text.strip()) > 2]
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_phrases = []
+    for phrase in phrases:
+        if phrase.lower() not in seen:
+            seen.add(phrase.lower())
+            unique_phrases.append(phrase)
+    # Sort phrases based on their order in the answer
+    unique_phrases.sort(key=lambda x: answer.find(x))
+    # Limit to max_points
+    bullet_points = unique_phrases[:max_points]
     return bullet_points
+
 
 def generate_test_question(answer):
     # Prepare the input text for the T5 model
